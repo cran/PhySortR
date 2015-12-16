@@ -1,0 +1,17 @@
+f28e66188c7a07109db1372cf2941302 *DESCRIPTION
+099e36b97616c2610facf4194ac58710 *NAMESPACE
+745bafb39d4aa3ab5273fc5c8bde0d9a *R/convert.eNewick.R
+52046277c5524c8f22f41df3ea8d889c *R/sortTrees.R
+a493f510dac39f9be224ce48cbb37f32 *inst/extdata/AllExclusiveTree1.tre
+17101901fd42bfe75b3303ab7ef34c26 *inst/extdata/AllExclusiveTree2.tre
+55f0b94ecbd51656987445d1972eaa26 *inst/extdata/ExclusiveTree1.tre
+12c7e257b74c8a67c823f858cfac1fb3 *inst/extdata/ExclusiveTree2.tre
+b9f962d509b21da003acce293f1d2416 *inst/extdata/ExclusiveTree3.tre
+ba3014cb5350b24e3657a417b2d4a244 *inst/extdata/ExclusiveTree4.tre
+d5baa041809201982bc8cb32444b6ab9 *inst/extdata/NonExclusiveTree1.tre
+d6e79a8b43bcf4ccaa20915abadf5858 *inst/extdata/NonExclusiveTree2.tre
+eee4fb2acb9d279de219bc5d2c145196 *inst/extdata/NonExclusiveTree3.tre
+d94b4570c0c724d8ce5971e8e9153667 *inst/extdata/NonExclusiveTree4.tre
+ba2d221bcd17d3950d2a06d470ab595a *man/PhySortR.Rd
+1d7484e831da6863016384c3d66549f3 *man/convert.eNewick.Rd
+26f8295fd4c053eaae25dade850b9487 *man/sortTrees.Rd
