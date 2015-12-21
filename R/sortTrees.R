@@ -330,11 +330,12 @@ sortTrees <- function(target.groups, min.support = 0, min.prop.target = 0.7, in.
     # Import tree using ape function. Will return NULL if tree can not be resolved.
     tree <- NULL
     tryCatch({tree <- ape::read.tree(text=tree.txt)}, 
-      warning = function(war) {warning(simpleError(call = "ape.read.tree", message = paste(war$call, war$message, "Moving to next file!"))); next},
+      warning = function(war) {warning(simpleError(call = "ape.read.tree", message = paste(war$call, war$message)))},
       error = function(err) {warning(simpleError(call = "ape.read.tree", message = paste(err$call, err$message, "Moving to next file!"))); next})
     
     # If still NULL or not of class 'phylo' print error message and move on to next tree. 
-    if (class(tree) != 'phylo') {
+    # Also check that ape::read.tree has returned an object with the required headers. 
+    if (class(tree) != 'phylo' | !all(c("edge", "Nnode", "tip.label") %in% names(tree))) {
       warning(simpleError(call = "ape.read.phylo", message = "ape::read.tree failed to return an object of class 'phylo'. Moving to next file!"))
       next
     }
@@ -387,10 +388,17 @@ sortTrees <- function(target.groups, min.support = 0, min.prop.target = 0.7, in.
     # Rooted nodes is the difference between the unrooted nodes and the total tips in the tree.
     number.leaves.in.nodes.rev <- c(Ntips - number.leaves.in.nodes)
     
-    # Get vector with each entry as support for that node.
-    tree.nodes.support.numeric <- c((as.numeric(tree$node.label[1:Nnodes])))
-    # Convert 'NA' values to zero. 
-    tree.nodes.support.numeric[is.na(tree.nodes.support.numeric)] <- 0
+    # Check if ape returned 'node.label' list. 
+    if (!"node.label" %in% names(tree)) {
+      # Assume if 'node.label' is absent make nodes zero. 
+      tree.nodes.support.numeric <- rep(0, Nnodes)
+    } else {
+      # Get vector with each entry as support for that node.
+      tree.nodes.support.numeric <- c((as.numeric(tree$node.label[1:Nnodes])))
+      # Convert 'NA' values to zero. 
+      tree.nodes.support.numeric[is.na(tree.nodes.support.numeric)] <- 0
+    } 
+    
     # Gets logic vector of nodes with support above threshold.
     tree.nodes.support <- (!is.na(tree.nodes.support.numeric[1:Nnodes]) & 
                              tree.nodes.support.numeric[1:Nnodes] >= min.support)
