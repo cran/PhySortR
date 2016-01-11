@@ -13,8 +13,8 @@ A full list of functions can be displayed by \code{library(help = PhySortR)}.
   \tabular{ll}{
   Package: \tab PhySortR\cr
   Type: \tab Package\cr
-  Version: \tab 1.0.3\cr
-  Date: \tab 2015-12-17\cr
+  Version: \tab 1.0.5\cr
+  Date: \tab 2016-01-11\cr
   License: \tab GPL (>= 3)\cr
   }
 }
@@ -24,7 +24,7 @@ A full list of functions can be displayed by \code{library(help = PhySortR)}.
   Maintainer: Timothy G. Stephens <timothy.stephens1@uqconnect.edu.au>
 }
 \references{
-  Stephens TG, Bhattacharya D, Ragan MA, Chan CX. 2015. PhySortR: a fast, flexible tool for sorting phylogenetic trees in R. MBE (under review)
+  Stephens TG, Bhattacharya D, Ragan MA, Chan CX. 2015. PhySortR: a fast, flexible tool for sorting phylogenetic trees in R. PeerJ PrePrints 3:e1609v1, DOI:10.7287/peerj.preprints.1609v1
 }
 \keyword{ package }
 \seealso{
