@@ -9,18 +9,18 @@ sortTrees(target.groups, min.support = 0, min.prop.target = 0.7,
   clades.sorted = "E,NE", extension = ".tre", clade.exclusivity = 0.9)
 }
 \arguments{
-\item{target.groups}{a set of one or more terms that represent the target taxa whose membership will 
+\item{target.groups}{a set of one or more terms that represent the target leaves whose membership will 
 be tested in each clade during sorting. Multiple terms are to be separated by a comma 
-(\code{"Taxon1,Taxon2"}). This process is case sensitive and uses partial 
-string matching, so the taxa identifiers must be unique i.e.
-\code{"Taxon1"} and \code{"Taxon10"} are not appropriate terms as 
-the first is a subset of the second.}
+(\code{"Taxon1,Taxon2"}). This process is case sensitive and uses strict  
+string-matching, so the taxa identifiers must be unique i.e.
+\code{"plantae"} and \code{"Viridiplantae"} might not be appropriate
+as the first is a subset of the second.}
 
 \item{min.support}{the minimum support (i.e. between 0-1 or 0-100) of a clade (Default = 0). Support
 values missing from phylogenetic trees are interpreted as zero.}
 
-\item{min.prop.target}{the minimum proportion (between 0.0-1.0) of target taxa to be present in a
-clade out of the total target taxa in the tree (Default = 0.7).}
+\item{min.prop.target}{the minimum proportion (between 0.0-1.0) of target leaves to be present in a
+clade out of the total target leaves in the tree (Default = 0.7).}
 
 \item{in.dir}{directory containing the phylogenetic trees to be sorted (Default = current working directory).}
 
@@ -39,7 +39,7 @@ Exclusive clades are also sorted into a sub-group of All Exclusive trees.}
 
 \item{extension}{the file extension of the tree files to be analyzed (Default = \code{".tre"}).}
 
-\item{clade.exclusivity}{the minimum proportion (0.0 <= x < 1.0) of target taxa to interrupting taxa allowed 
+\item{clade.exclusivity}{the minimum proportion (0.0 <= x < 1.0) of target leaves to interrupting leaves allowed 
 in each non-exclusive clade (Default = 0.9).}
 }
 \value{
@@ -48,7 +48,7 @@ Will always return a list containing the names of the trees identified during so
 }
 \description{
 Reads phylogenetic trees from a directory and sorts them based on the presence 
-of Exclusive and Non-Exclusive clades containing a set of given target taxa at   
+of Exclusive and Non-Exclusive clades containing a set of given target leaves at   
 a desired support value. Can interpret trees in both Newick and extended Newick format.
 }
 \examples{
@@ -100,7 +100,7 @@ a desired support value. Can interpret trees in both Newick and extended Newick 
  # The function will search in "Algae_Trees/" for files with the 
  # extension ".tre" and check them for only Non-Exclusive clades. 
  # A clade will only be defined if it has support >= 90 and contains at least
- # 80\% of the total target taxa in the tree. A Non-Exclusive clade must also
+ # 80\% of the total target leaves in the tree. A Non-Exclusive clade must also
  # be composed of >= 95\% target taxa (i.e. < 5\% non-target taxa).
  # The function will (a) return a list of the trees identified during 
  # sorting and (b) copy the trees identified during sorting to the out 

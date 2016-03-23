@@ -1,18 +1,18 @@
 #' Sorts Phylogenetic Trees using Taxa Identifiers
 #' 
 #' Reads phylogenetic trees from a directory and sorts them based on the presence 
-#' of Exclusive and Non-Exclusive clades containing a set of given target taxa at   
+#' of Exclusive and Non-Exclusive clades containing a set of given target leaves at   
 #' a desired support value. Can interpret trees in both Newick and extended Newick format.
-#' @param target.groups         a set of one or more terms that represent the target taxa whose membership will 
+#' @param target.groups         a set of one or more terms that represent the target leaves whose membership will 
 #'                              be tested in each clade during sorting. Multiple terms are to be separated by a comma 
-#'                              (\code{"Taxon1,Taxon2"}). This process is case sensitive and uses partial 
-#'                              string matching, so the taxa identifiers must be unique i.e.
-#'                              \code{"Taxon1"} and \code{"Taxon10"} are not appropriate terms as 
-#'                              the first is a subset of the second.
+#'                              (\code{"Taxon1,Taxon2"}). This process is case sensitive and uses strict  
+#'                              string-matching, so the taxa identifiers must be unique i.e.
+#'                              \code{"plantae"} and \code{"Viridiplantae"} might not be appropriate
+#'                              as the first is a subset of the second.
 #' @param min.support           the minimum support (i.e. between 0-1 or 0-100) of a clade (Default = 0). Support
 #'                              values missing from phylogenetic trees are interpreted as zero.
-#' @param min.prop.target       the minimum proportion (between 0.0-1.0) of target taxa to be present in a
-#'                              clade out of the total target taxa in the tree (Default = 0.7).
+#' @param min.prop.target       the minimum proportion (between 0.0-1.0) of target leaves to be present in a
+#'                              clade out of the total target leaves in the tree (Default = 0.7).
 #' @param in.dir                directory containing the phylogenetic trees to be sorted (Default = current working directory).
 #' @param out.dir               directory to be created within \code{in.dir} for the trees identified during  
 #'                              sorting. If \code{out.dir} is omitted the default of \code{Sorted_Trees/}
@@ -25,7 +25,7 @@
 #'                              Non-Exclusive (\code{"NE"}) clades. Specify both options by comma separation \code{"E,NE"} (Default).
 #'                              Exclusive clades are also sorted into a sub-group of All Exclusive trees. 
 #' @param extension             the file extension of the tree files to be analyzed (Default = \code{".tre"}).
-#' @param clade.exclusivity     the minimum proportion (0.0 <= x < 1.0) of target taxa to interrupting taxa allowed 
+#' @param clade.exclusivity     the minimum proportion (0.0 <= x < 1.0) of target leaves to interrupting leaves allowed 
 #'                              in each non-exclusive clade (Default = 0.9).
 #' @return                      Will always return a list containing the names of the trees identified during sorting, 
 #'                              irrespective of the \code{mode} argument.
@@ -81,7 +81,7 @@
 #'  # The function will search in "Algae_Trees/" for files with the 
 #'  # extension ".tre" and check them for only Non-Exclusive clades. 
 #'  # A clade will only be defined if it has support >= 90 and contains at least
-#'  # 80% of the total target taxa in the tree. A Non-Exclusive clade must also
+#'  # 80% of the total target leaves in the tree. A Non-Exclusive clade must also
 #'  # be composed of >= 95% target taxa (i.e. < 5% non-target taxa).
 #'  # The function will (a) return a list of the trees identified during 
 #'  # sorting and (b) copy the trees identified during sorting to the out 
@@ -265,10 +265,6 @@ sortTrees <- function(target.groups, min.support = 0, min.prop.target = 0.7, in.
   
   # Set variables and counters.
   number.trees <- length(file.fullNames)
-  #All_Exclusive.count <- 0
-  #Exclusive.count <- 0
-  #Non_Exclusive.count <- 0
-  #Negative.count <- 0
   
   # Create names list based off of selected clades.sorted parameters. 
   if (sort.exclusive & sort.nonexclusive) {
@@ -355,15 +351,19 @@ sortTrees <- function(target.groups, min.support = 0, min.prop.target = 0.7, in.
     # Each value of matrix indicates if target matches that tip.
     tip.target.matrix <- sapply(target.groups, function(x) grepl(x, all.tips))
     
-    # Get number of target leaves in whole tree
-    # WARNING CAN NOT BE OVERLAPPING NAMES!!!!!!!
-    ## TODO: Check above WARNING
-    leaves.match.tree <- sum(grepl(paste(target.groups, collapse="|"), all.tips))
+    # Get number of target leaves in whole tree over all target.groups
+    leaves.match.tree <- sum(tip.target.matrix)
     
+    # Get descendants (both nodes and tips) for all nodes in tree. 
+    # getDescendants() returns the tip and node numbers used by class "phylo" (APE Package) 
+    node.desc <- sapply((Ntips+1):(Ntips+Nnodes), function(x) phytools::getDescendants(tree, x))
+    # Take only the tip numbers i.e. numbers <= Ntips
+    node.desc.leaves <- sapply(1:Nnodes, function(x) node.desc[[x]][node.desc[[x]] <= Ntips])
     # Logic vector indicating if a tip is in a node (invert for rooted nodes!).
     #   Each column represents a node
     #   Each rows represents a tip
-    logic.of.tips <- sapply((Ntips+1):(Ntips+Nnodes), function(x) all.tips %in% all.tips[phytools::getDescendants(tree, x)])
+    logic.of.tips <- sapply(1:Nnodes, function(x) c(1:Ntips) %in% node.desc.leaves[[x]])
+    
     # List of nodes and there associated tips.
     list.of.tips <- lapply(1:Nnodes, function(x) all.tips[logic.of.tips[ ,x]])
     list.of.tips.rev <- lapply(1:Nnodes, function(x) all.tips[!logic.of.tips[ ,x]])
@@ -375,13 +375,9 @@ sortTrees <- function(target.groups, min.support = 0, min.prop.target = 0.7, in.
     number.targets.in.nodes.rev <- c(leaves.match.tree - number.targets.in.nodes)
     
     # Returns a logic vector with each element indicating if all the target.groups have been found in that node.
+    all.targets.in.nodes <- sapply(1:Nnodes, function(x) all(colSums(logic.of.tips[ ,x] & tip.target.matrix) >=1))
     # Invert logic.of.tips for rooted nodes.
-    all.targets.in.nodes <- sapply(1:Nnodes, 
-                                  function(y) all(sapply(1:length(target.groups), 
-                                  function(x) any((logic.of.tips[ ,y] & tip.target.matrix)[ ,x]))))
-    all.targets.in.nodes.rev <- sapply(1:Nnodes, 
-                                  function(y) all(sapply(1:length(target.groups), 
-                                  function(x) any((!logic.of.tips[ ,y] & tip.target.matrix)[ ,x]))))
+    all.targets.in.nodes.rev <- sapply(1:Nnodes, function(x) all(colSums(!logic.of.tips[ ,x] & tip.target.matrix) >=1))
     
     # Number of leaves in each node.
     number.leaves.in.nodes <- sapply(1:Nnodes, function(x) length(list.of.tips[[x]]))
@@ -423,9 +419,11 @@ sortTrees <- function(target.groups, min.support = 0, min.prop.target = 0.7, in.
       whole.tree <- TRUE
       all.queries.in.one.clade.only <- TRUE
       exclusive.monophyly.found <- TRUE
-      write(paste("** Whole Tree; Targetgroup in tree:", 
-                  number.targets.in.nodes[[1]]), LOG, append=TRUE)
-      write(list.of.tips[[1]], LOG, append=TRUE)
+      if (sort.exclusive) {
+        write(paste("** Whole Tree; Targetgroup in tree:", 
+                    number.targets.in.nodes[[1]]), LOG, append=TRUE)
+        write(list.of.tips[[1]], LOG, append=TRUE)
+      }
     }
     
     #########################
@@ -439,56 +437,63 @@ sortTrees <- function(target.groups, min.support = 0, min.prop.target = 0.7, in.
       if (rules.check[[x]]) {
         # If all leaves in node are queries
         if (number.targets.in.nodes[[x]] == number.leaves.in.nodes[[x]]) {
-          all.queries.in.one.clade.only <- TRUE
-          exclusive.monophyly.found <- TRUE
-          write(paste("** Support: ", tree.nodes.support.numeric[[x]], 
-                      "; Targetgroup in clade: ", number.targets.in.nodes[[x]], 
-                      "; Targetgroup in tree: ", leaves.match.tree, sep=""), LOG, append=TRUE)
-          write(list.of.tips[[x]], LOG, append=TRUE)
-          
+          if (sort.exclusive) {
+            all.queries.in.one.clade.only <- TRUE
+            exclusive.monophyly.found <- TRUE
+            write(paste("** Support: ", tree.nodes.support.numeric[[x]], 
+                        "; Targetgroup in clade: ", number.targets.in.nodes[[x]], 
+                        "; Targetgroup in tree: ", leaves.match.tree, sep=""), LOG, append=TRUE)
+            write(list.of.tips[[x]], LOG, append=TRUE)
+          }
           # If NOT all leaves in node are queries.
         } else {
           all.queries.in.one.clade.only <- TRUE
           if ((number.targets.in.nodes[x] / number.leaves.in.nodes[[x]]) >= clade.exclusivity) {
-            nonexclusive.monophyly.found <- TRUE
-            write(paste("** NE Support: ", tree.nodes.support.numeric[[x]], 
-                        "; Targetgroup in clade: ", number.targets.in.nodes[[x]], 
-                        "; Species in clade: ", number.leaves.in.nodes[[x]], 
-                        "; Total in tree: ", leaves.match.tree, sep=""), LOG, append=TRUE)
-            write(list.of.tips[[x]], LOG, append=TRUE)
-            nelines <- c(nelines, paste("** NE Support: ", tree.nodes.support.numeric[[x]], 
-                                        "; Targetgroup in clade: ", number.targets.in.nodes[[x]], 
-                                        "; Species in clade: ", number.leaves.in.nodes[[x]], 
-                                        "; Total in tree: ", leaves.match.tree, sep=""))
-            nelines <- c(nelines, list.of.tips[[x]])
+            if (sort.nonexclusive) {
+              nonexclusive.monophyly.found <- TRUE
+              write(paste("** NE Support: ", tree.nodes.support.numeric[[x]], 
+                          "; Targetgroup in clade: ", number.targets.in.nodes[[x]], 
+                          "; Species in clade: ", number.leaves.in.nodes[[x]], 
+                          "; Total in tree: ", leaves.match.tree, sep=""), LOG, append=TRUE)
+              write(list.of.tips[[x]], LOG, append=TRUE)
+              nelines <- c(nelines, paste("** NE Support: ", tree.nodes.support.numeric[[x]], 
+                                          "; Targetgroup in clade: ", number.targets.in.nodes[[x]], 
+                                          "; Species in clade: ", number.leaves.in.nodes[[x]], 
+                                          "; Total in tree: ", leaves.match.tree, sep=""))
+              nelines <- c(nelines, list.of.tips[[x]])
+            }
           }
         }
       }
       if (rules.check.rev[[x]]) {
         # If all leaves in node are queries.
         if (number.targets.in.nodes.rev[[x]] == number.leaves.in.nodes.rev[[x]]) {
-          all.queries.in.one.clade.only <- TRUE
-          exclusive.monophyly.found <- TRUE
-          write(paste("** Support: ", tree.nodes.support.numeric[[x]], 
-                      "; Targetgroup in clade: ", number.targets.in.nodes.rev[[x]], 
-                      "; Targetgroup in tree: ", leaves.match.tree, sep=""), LOG, append=TRUE)
-          write(list.of.tips.rev[[x]], LOG, append=TRUE)
+          if (sort.exclusive) {
+            all.queries.in.one.clade.only <- TRUE
+            exclusive.monophyly.found <- TRUE
+            write(paste("** Support: ", tree.nodes.support.numeric[[x]], 
+                        "; Targetgroup in clade: ", number.targets.in.nodes.rev[[x]], 
+                        "; Targetgroup in tree: ", leaves.match.tree, sep=""), LOG, append=TRUE)
+            write(list.of.tips.rev[[x]], LOG, append=TRUE)
+          }
           
           # If NOT all leaves in node are queries.
         } else {
           all.queries.in.one.clade.only <- TRUE
           if ((number.targets.in.nodes.rev[[x]] / number.leaves.in.nodes.rev[[x]]) >= clade.exclusivity) {
-            nonexclusive.monophyly.found <- TRUE
-            write(paste("** NE Support: ", tree.nodes.support.numeric[[x]], 
-                        "; Targetgroup in clade: ", number.targets.in.nodes.rev[[x]], 
-                        "; Species in clade: ", number.leaves.in.nodes.rev[[x]], 
-                        "; Total in tree: ", leaves.match.tree, sep=""), LOG, append=TRUE)
-            write(list.of.tips.rev[[x]], LOG, append=TRUE)
-            nelines <- c(nelines, paste("** NE Support: ", tree.nodes.support.numeric[[x]], 
-                                        "; Targetgroup in clade: ", number.targets.in.nodes.rev[[x]], 
-                                        "; Species in clade: ", number.leaves.in.nodes.rev[[x]], 
-                                        "; Total in tree: ", leaves.match.tree, sep=""))
-            nelines <- c(nelines, list.of.tips.rev[[x]])
+            if (sort.nonexclusive) {
+              nonexclusive.monophyly.found <- TRUE
+              write(paste("** NE Support: ", tree.nodes.support.numeric[[x]], 
+                          "; Targetgroup in clade: ", number.targets.in.nodes.rev[[x]], 
+                          "; Species in clade: ", number.leaves.in.nodes.rev[[x]], 
+                          "; Total in tree: ", leaves.match.tree, sep=""), LOG, append=TRUE)
+              write(list.of.tips.rev[[x]], LOG, append=TRUE)
+              nelines <- c(nelines, paste("** NE Support: ", tree.nodes.support.numeric[[x]], 
+                                          "; Targetgroup in clade: ", number.targets.in.nodes.rev[[x]], 
+                                          "; Species in clade: ", number.leaves.in.nodes.rev[[x]], 
+                                          "; Total in tree: ", leaves.match.tree, sep=""))
+              nelines <- c(nelines, list.of.tips.rev[[x]])
+            }
           }
         }
       }
@@ -500,79 +505,64 @@ sortTrees <- function(target.groups, min.support = 0, min.prop.target = 0.7, in.
     # If all query leaves have been found in ONLY one node.
     if (all.queries.in.one.clade.only) {
       # If NOT all leaves in node are queries.
-      if (exclusive.monophyly.found) {
+      if (exclusive.monophyly.found & sort.exclusive) {
         # If monophyly is whole tree.
         if (whole.tree) {
           # If returning trees with exclusive clades.  
-          if (sort.exclusive) {
-            if (copy.trees.onoff) {
-              # Action to take.
-              if (copy.trees) {
-                file.copy(file.fullNames[i], file.path(final.outpath, "Exclusive/All_Exclusive"))
-              } else {
-                file.copy(file.fullNames[i], file.path(final.outpath, "Exclusive/All_Exclusive"))
-                file.remove(file.fullNames[i])
-              }
-            }
-            tree.exclusivity$All.Exclusive <- c(tree.exclusivity$All.Exclusive, tree.name)
-            #All_Exclusive.count <- All_Exclusive.count + 1
-          }
-          # If monophyly is not whole tree.
-        } else {
-          # If returning trees with exclusive clades.  
-          if (sort.exclusive) {
-            if (copy.trees.onoff) {
-              # Action to take.
-              if (copy.trees) {
-                file.copy(file.fullNames[i], file.path(final.outpath, "Exclusive"))
-              } else {
-                file.copy(file.fullNames[i], file.path(final.outpath, "Exclusive"))
-                file.remove(file.fullNames[i])
-              }
-            }
-            tree.exclusivity$Exclusive <- c(tree.exclusivity$Exclusive, tree.name)
-            #Exclusive.count <- Exclusive.count + 1
-          }
-        }
-        # If MOST leaves in node are queries and is not exclusive monophyly.
-      } else if (! exclusive.monophyly.found & nonexclusive.monophyly.found) {
-        # If returning trees with non-exclusive clades.  
-        if (sort.nonexclusive) {
           if (copy.trees.onoff) {
-            # Write nelines to file.
-            NEOUT <- file(file.path(final.outpath, "Non_Exclusive", paste(tree.name, ".sortgroup.txt", sep='')), "w")
-            writeLines(nelines, NEOUT, sep="\n")
-            close(NEOUT)
             # Action to take.
             if (copy.trees) {
-              file.copy(file.fullNames[i], file.path(final.outpath, "Non_Exclusive"))
+              file.copy(file.fullNames[i], file.path(final.outpath, "Exclusive/All_Exclusive"))
             } else {
-              file.copy(file.fullNames[i], file.path(final.outpath, "Non_Exclusive"))
+              file.copy(file.fullNames[i], file.path(final.outpath, "Exclusive/All_Exclusive"))
               file.remove(file.fullNames[i])
             }
           }
-          tree.exclusivity$Non.Exclusive <- c(tree.exclusivity$Non.Exclusive, tree.name)
-          #Non_Exclusive.count <- Non_Exclusive.count + 1
+          tree.exclusivity$All.Exclusive <- c(tree.exclusivity$All.Exclusive, tree.name)
+          
+          # If monophyly is not whole tree.
+        } else {
+          # If returning trees with exclusive clades.  
+          if (copy.trees.onoff) {
+            # Action to take.
+            if (copy.trees) {
+              file.copy(file.fullNames[i], file.path(final.outpath, "Exclusive"))
+            } else {
+              file.copy(file.fullNames[i], file.path(final.outpath, "Exclusive"))
+              file.remove(file.fullNames[i])
+            }
+          }
+          tree.exclusivity$Exclusive <- c(tree.exclusivity$Exclusive, tree.name)
         }
+        
+        # If MOST leaves in node are queries and is not exclusive monophyly.
+      } else if (! exclusive.monophyly.found & nonexclusive.monophyly.found & sort.nonexclusive) {
+        # If returning trees with non-exclusive clades.  
+        if (copy.trees.onoff) {
+          # Write nelines to file.
+          NEOUT <- file(file.path(final.outpath, "Non_Exclusive", paste(tree.name, ".sortgroup.txt", sep='')), "w")
+          writeLines(nelines, NEOUT, sep="\n")
+          close(NEOUT)
+          # Action to take.
+          if (copy.trees) {
+            file.copy(file.fullNames[i], file.path(final.outpath, "Non_Exclusive"))
+          } else {
+            file.copy(file.fullNames[i], file.path(final.outpath, "Non_Exclusive"))
+            file.remove(file.fullNames[i])
+          }
+        }
+        tree.exclusivity$Non.Exclusive <- c(tree.exclusivity$Non.Exclusive, tree.name)
+        
       # Else if all queries not in one clade only.
       } else {
         write("Negative.", LOG, append=TRUE)
-        #Negative.count <- Negative.count + 1
       }
     } else {
       write("Negative.", LOG, append=TRUE)
-      #Negative.count <- Negative.count + 1
     }
   }
   # Close log file
   close(LOG)
   
-  # Print stats on run. 
-  #cat ("\n")
-  #print (paste ("Tree Count:", number.trees))
-  #print (paste ("All Exclusive:", All_Exclusive.count))
-  #print (paste ("Exclusive:", Exclusive.count))
-  #print (paste ("Non_Exclusive:", Non_Exclusive.count))
-  #print (paste ("Negative:", Negative.count))
   return (tree.exclusivity)
 }
