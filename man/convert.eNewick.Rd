@@ -23,4 +23,3 @@ as \code{ape} and \code{phytools}.
  new.tree <- convert.eNewick(tree)
  new.tree
 }
-

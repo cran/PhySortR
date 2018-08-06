@@ -111,4 +111,3 @@ a desired support value. Can interpret trees in both Newick and extended Newick 
  unlink("Sorted_Trees.log")
  unlink(dir(".", ".*.tre$"))
 }
-

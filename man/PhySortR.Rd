@@ -13,8 +13,8 @@ A full list of functions can be displayed by \code{library(help = PhySortR)}.
   \tabular{ll}{
   Package: \tab PhySortR\cr
   Type: \tab Package\cr
-  Version: \tab 1.0.7\cr
-  Date: \tab 2016-05-16\cr
+  Version: \tab 1.0.8\cr
+  Date: \tab 2018-07-20\cr
   License: \tab GPL (>= 3)\cr
   }
 }

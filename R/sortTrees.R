@@ -322,17 +322,17 @@ sortTrees <- function(target.groups, min.support = 0, min.prop.target = 0.7, in.
         next
       }
     }
-
-    # Import tree using ape function. Will return NULL if tree can not be resolved.
+    
+    # Import tree using ape function. Will return NULL if tree can not be resolved or if error encountered.
     tree <- NULL
     tryCatch({tree <- ape::read.tree(text=tree.txt)}, 
-      warning = function(war) {warning(simpleError(call = "ape.read.tree", message = paste(war$call, war$message)))},
-      error = function(err) {warning(simpleError(call = "ape.read.tree", message = paste(err$call, err$message, "Moving to next file!"))); next})
+      warning = function(war) {warning(simpleError(call = "ape.read.tree", message = war))},
+      error = function(err) {warning(simpleError(call = "ape.read.tree", message = err))})
     
-    # If still NULL or not of class 'phylo' print error message and move on to next tree. 
+    # If NULL or not of class 'phylo' (becuase read.tree failed) print error message and move on to next tree. 
     # Also check that ape::read.tree has returned an object with the required headers. 
     if (class(tree) != 'phylo' | !all(c("edge", "Nnode", "tip.label") %in% names(tree))) {
-      warning(simpleError(call = "ape.read.phylo", message = "ape::read.tree failed to return an object of class 'phylo'. Moving to next file!"))
+      warning(simpleError(call = "ape.read", message = "ape::read.tree failed to return an object of class 'phylo'. Moving to next file!"))
       next
     }
     
