@@ -27,9 +27,3 @@ A full list of functions can be displayed by \code{library(help = PhySortR)}.
   Stephens TG, Bhattacharya D, Ragan MA, Chan CX. 2016. PhySortR: a fast, flexible tool for sorting phylogenetic trees in R. PeerJ, 4:e2038, DOI:10.7717/peerj.2038
 }
 \keyword{ package }
-\seealso{
-  \code{
-    \link{phytools}
-    \link{ape}
-  }
-}

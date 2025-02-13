@@ -4,9 +4,17 @@
 \alias{sortTrees}
 \title{Sorts Phylogenetic Trees using Taxa Identifiers}
 \usage{
-sortTrees(target.groups, min.support = 0, min.prop.target = 0.7,
-  in.dir = ".", out.dir = "Sorted_Trees", mode = "l",
-  clades.sorted = "E,NE", extension = ".tre", clade.exclusivity = 0.9)
+sortTrees(
+  target.groups,
+  min.support = 0,
+  min.prop.target = 0.7,
+  in.dir = ".",
+  out.dir = "Sorted_Trees",
+  mode = "l",
+  clades.sorted = "E,NE",
+  extension = ".tre",
+  clade.exclusivity = 0.9
+)
 }
 \arguments{
 \item{target.groups}{a set of one or more terms that represent the target leaves whose membership will 
@@ -17,7 +25,9 @@ string-matching, so the taxa identifiers must be unique i.e.
 as the first is a subset of the second.}
 
 \item{min.support}{the minimum support (i.e. between 0-1 or 0-100) of a clade (Default = 0). Support
-values missing from phylogenetic trees are interpreted as zero.}
+values missing from phylogenetic trees are interpreted as zero. A vector of values
+can be provided if multiple support values (e.g., aLRT, UFboot) are present in the 
+tree (i.e., \code{"75.5/95"}).}
 
 \item{min.prop.target}{the minimum proportion (between 0.0-1.0) of target leaves to be present in a
 clade out of the total target leaves in the tree (Default = 0.7).}
@@ -101,6 +111,26 @@ a desired support value. Can interpret trees in both Newick and extended Newick 
  # extension ".tre" and check them for only Non-Exclusive clades. 
  # A clade will only be defined if it has support >= 90 and contains at least
  # 80\% of the total target leaves in the tree. A Non-Exclusive clade must also
+ # be composed of >= 95\% target taxa (i.e. < 5\% non-target taxa).
+ # The function will (a) return a list of the trees identified during 
+ # sorting and (b) copy the trees identified during sorting to the out 
+ # directory "Algae_Trees/Sorted_Trees_RVG/Non_Exclusive/".
+ 
+ # (4) Sorting with multiple min.support values specified.
+ #sortTrees(target.groups = "Rhodophyta,Viridiplantae",
+ #  min.prop.target = 0.8,
+ #  min.support = c(75, 90),
+ #  in.dir= "Algae_Trees/",
+ #  out.dir="Sorted_Trees_RVG_75_95/",
+ #  mode = "c",
+ #  clades.sorted = "NE",
+ #  clade.exclusivity = 0.95)
+ 
+ # The function will search in "Algae_Trees/" for files with the 
+ # extension ".tre" and check them for only Non-Exclusive clades. 
+ # A clade will only be defined if it has its first support >= 75
+ # and its second support >= 90 and contains at least 80\% of the 
+ # total target leaves in the tree. A Non-Exclusive clade must also
  # be composed of >= 95\% target taxa (i.e. < 5\% non-target taxa).
  # The function will (a) return a list of the trees identified during 
  # sorting and (b) copy the trees identified during sorting to the out 

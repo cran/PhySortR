@@ -1,8 +1,8 @@
 Package: PhySortR
 Type: Package
 Title: A Fast, Flexible Tool for Sorting Phylogenetic Trees
-Version: 1.0.8
-Date: 2018-07-20
+Version: 1.0.9
+Date: 2025-02-07
 Authors@R: c(person("Timothy", "Stephens", email = "timothy.stephens1@uqconnect.edu.au", role = c("aut", "cre", "trl"), comment = "R port"),
   person("Debashish", "Bhattacharya", email = "Bhattacharya@AESOP.Rutgers.edu", role = c("aut")),
   person("Mark", "Ragan", email = "m.ragan@imb.uq.edu.au", role = c("aut")),
@@ -13,15 +13,15 @@ Description: Screens and sorts phylogenetic trees in both traditional and
     a tree) of Exclusive clades that comprise only the target taxa and/or Non-
     Exclusive clades that includes a defined portion of non-target taxa.
 Depends: R (>= 3.0.0)
-Imports: phytools, ape
+Imports: phytools, ape, methods
 Repository: CRAN
-LazyData: true
 License: GPL (>= 3)
-RoxygenNote: 6.0.1
+RoxygenNote: 7.3.2
+Encoding: UTF-8
 NeedsCompilation: no
-Packaged: 2018-07-20 00:23:12 UTC; timothy.stephens
+Packaged: 2025-02-13 00:03:36 UTC; timothy
 Author: Timothy Stephens [aut, cre, trl] (R port),
   Debashish Bhattacharya [aut],
   Mark Ragan [aut],
   Cheong Xin Chan [aut, cph] (Original Perl implementation)
-Date/Publication: 2018-08-06 07:00:08 UTC
+Date/Publication: 2025-02-13 00:20:02 UTC

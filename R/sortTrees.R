@@ -10,7 +10,9 @@
 #'                              \code{"plantae"} and \code{"Viridiplantae"} might not be appropriate
 #'                              as the first is a subset of the second.
 #' @param min.support           the minimum support (i.e. between 0-1 or 0-100) of a clade (Default = 0). Support
-#'                              values missing from phylogenetic trees are interpreted as zero.
+#'                              values missing from phylogenetic trees are interpreted as zero. A vector of values
+#'                              can be provided if multiple support values (e.g., aLRT, UFboot) are present in the 
+#'                              tree (i.e., \code{"75.5/95"}).
 #' @param min.prop.target       the minimum proportion (between 0.0-1.0) of target leaves to be present in a
 #'                              clade out of the total target leaves in the tree (Default = 0.7).
 #' @param in.dir                directory containing the phylogenetic trees to be sorted (Default = current working directory).
@@ -31,6 +33,7 @@
 #'                              irrespective of the \code{mode} argument.
 #' @import ape
 #' @import phytools
+#' @importFrom methods is
 #' @export
 #' @examples
 #'  ### Load data ###
@@ -87,6 +90,26 @@
 #'  # sorting and (b) copy the trees identified during sorting to the out 
 #'  # directory "Algae_Trees/Sorted_Trees_RVG/Non_Exclusive/".
 #'  
+#'  # (4) Sorting with multiple min.support values specified.
+#'  #sortTrees(target.groups = "Rhodophyta,Viridiplantae",
+#'  #  min.prop.target = 0.8,
+#'  #  min.support = c(75, 90),
+#'  #  in.dir= "Algae_Trees/",
+#'  #  out.dir="Sorted_Trees_RVG_75_95/",
+#'  #  mode = "c",
+#'  #  clades.sorted = "NE",
+#'  #  clade.exclusivity = 0.95)
+#'  
+#'  # The function will search in "Algae_Trees/" for files with the 
+#'  # extension ".tre" and check them for only Non-Exclusive clades. 
+#'  # A clade will only be defined if it has its first support >= 75
+#'  # and its second support >= 90 and contains at least 80% of the 
+#'  # total target leaves in the tree. A Non-Exclusive clade must also
+#'  # be composed of >= 95% target taxa (i.e. < 5% non-target taxa).
+#'  # The function will (a) return a list of the trees identified during 
+#'  # sorting and (b) copy the trees identified during sorting to the out 
+#'  # directory "Algae_Trees/Sorted_Trees_RVG/Non_Exclusive/".
+#'  
 #'  ### Clean up ###
 #'  unlink("Algae_Trees", recursive=TRUE)
 #'  unlink("Sorted_Trees.log")
@@ -110,8 +133,8 @@ sortTrees <- function(target.groups, min.support = 0, min.prop.target = 0.7, in.
   
   
   ## Test min.support argument.
-  if (! is.numeric(min.support) || is.list(min.support) || length(min.support) > 1) {
-    err <- simpleError(call = "min.support", message = "ERROR: 'min.support' is not an integer!")
+  if (! is.numeric(min.support) || is.list(min.support) || length(min.support) == 0) {
+    err <- simpleError(call = "min.support", message = "ERROR: 'min.support' is not an integer or vector of integers!")
     stop(err)
   }
   
@@ -331,7 +354,7 @@ sortTrees <- function(target.groups, min.support = 0, min.prop.target = 0.7, in.
     
     # If NULL or not of class 'phylo' (becuase read.tree failed) print error message and move on to next tree. 
     # Also check that ape::read.tree has returned an object with the required headers. 
-    if (class(tree) != 'phylo' | !all(c("edge", "Nnode", "tip.label") %in% names(tree))) {
+    if (!is(tree, 'phylo') | !all(c("edge", "Nnode", "tip.label") %in% names(tree))) {
       warning(simpleError(call = "ape.read", message = "ape::read.tree failed to return an object of class 'phylo'. Moving to next file!"))
       next
     }
@@ -389,15 +412,49 @@ sortTrees <- function(target.groups, min.support = 0, min.prop.target = 0.7, in.
       # Assume if 'node.label' is absent make nodes zero. 
       tree.nodes.support.numeric <- rep(0, Nnodes)
     } else {
-      # Get vector with each entry as support for that node.
-      tree.nodes.support.numeric <- c((as.numeric(tree$node.label[1:Nnodes])))
-      # Convert 'NA' values to zero. 
-      tree.nodes.support.numeric[is.na(tree.nodes.support.numeric)] <- 0
-    } 
-    
-    # Gets logic vector of nodes with support above threshold.
-    tree.nodes.support <- (!is.na(tree.nodes.support.numeric[1:Nnodes]) & 
-                             tree.nodes.support.numeric[1:Nnodes] >= min.support)
+      tree.nodes.support.numeric <- tree$node.label[1:Nnodes]
+      # Check if we have one or multiple support values
+      if (!any(grepl("/", tree.nodes.support.numeric))) {
+        ## Single support value
+        if ( length(min.support)!=1 ) {
+          err <- simpleError(call = "min.support",
+                             message = paste("ERROR: 'min.support' (", paste(min.support, collapse='/'), ") with multiple values given, however, only single node supports found in tree ", tree.name, sep="")
+          )
+          stop(err)
+        }
+        # Get vector with each entry as support for that node.
+        tree.nodes.support.numeric <- c((as.numeric(tree.nodes.support.numeric)))
+        # Convert 'NA' values to zero. 
+        tree.nodes.support.numeric[is.na(tree.nodes.support.numeric)] <- 0
+        
+        # Gets logic vector of nodes with support above threshold.
+        tree.nodes.support <- (!is.na(tree.nodes.support.numeric[1:Nnodes]) &
+                                 tree.nodes.support.numeric[1:Nnodes] >= min.support)
+      } else {
+        ## Multiple support values
+        tree.nodes.support <- sapply(
+           1:Nnodes,
+           function(x) {
+              support.value <- tree.nodes.support.numeric[x]
+              if (support.value == "") {
+                support.values <- rep(0, length(min.support))
+                return(all(support.values >= min.support))
+              } else {
+                support.values <- strsplit(support.value, split = "/")[[1]]
+                support.values <- c((as.numeric(support.values)))
+                support.values[is.na(support.values)] <- 0
+                if ( length(support.values) != length(min.support) ) {
+                  err <- simpleError(call = "support.value",
+                                     message = paste("ERROR: node 'support.value' (", support.value, ") and 'min.support' (", paste(min.support, collapse='/'), ") have different lengths in tree ", tree.name, sep="")
+                                     )
+                  stop(err)
+                }
+                return(all(support.values >= min.support))
+              }
+             }
+           )
+      }
+    }
     
     # Screen both the unrooted and rooted nodes.
     #   If node has support >= min.support &
